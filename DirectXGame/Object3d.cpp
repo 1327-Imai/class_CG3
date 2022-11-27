@@ -25,6 +25,8 @@ CD3DX12_CPU_DESCRIPTOR_HANDLE Object3d::cpuDescHandleSRV;
 CD3DX12_GPU_DESCRIPTOR_HANDLE Object3d::gpuDescHandleSRV;
 XMMATRIX Object3d::matView{};
 XMMATRIX Object3d::matProjection{};
+XMMATRIX Object3d::matBillbooard = XMMatrixIdentity();
+XMMATRIX Object3d::matBillbooardY = XMMatrixIdentity();
 XMFLOAT3 Object3d::eye = { 0, 0, -50.0f };
 XMFLOAT3 Object3d::target = { 0, 0, 0 };
 XMFLOAT3 Object3d::up = { 0, 1, 0 };
@@ -280,6 +282,7 @@ void Object3d::InitializeGraphicsPipeline()
 
 	// ブレンドステートの設定
 	gpipeline.BlendState.RenderTarget[0] = blenddesc;
+	gpipeline.BlendState.AlphaToCoverageEnable = true;
 
 	// 深度バッファのフォーマット
 	gpipeline.DSVFormat = DXGI_FORMAT_D32_FLOAT;
@@ -334,7 +337,7 @@ void Object3d::LoadTexture()
 	ScratchImage scratchImg{};
 
 	// WICテクスチャのロード
-	result = LoadFromWICFile( L"Resources/tex1.png", WIC_FLAGS_NONE, &metadata, scratchImg);
+	result = LoadFromWICFile( L"Resources/kusa.png", WIC_FLAGS_NONE, &metadata, scratchImg);
 	assert(SUCCEEDED(result));
 
 	ScratchImage mipChain{};
@@ -548,6 +551,31 @@ void Object3d::UpdateViewMatrix()
 	//ビュー行列に平行移動成分を設定
 	matView.r[3] = translation;
 
+#pragma region//全方向ビルボード行列の計算
+	//ビルボード行列
+	matBillbooard.r[0] = cameraAxisX;
+	matBillbooard.r[1] = cameraAxisY;
+	matBillbooard.r[2] = cameraAxisZ;
+	matBillbooard.r[3] = XMVectorSet(0 , 0 , 0 , 1);
+#pragma endregion
+
+#pragma region//Y軸回りビルボード行列の計算
+	//カメラX軸、Y軸、Z軸
+	XMVECTOR ybillCameraAxisX , ybillCameraAxisY , ybillCameraAxisZ;
+
+	//X軸は共通
+	ybillCameraAxisX = cameraAxisX;
+	//Y軸はワールド行列座標系のY軸
+	ybillCameraAxisY = XMVector3Normalize(upVector);
+	//Z軸はX軸→Y軸の外積で求まる
+	ybillCameraAxisZ = XMVector3Cross(ybillCameraAxisX , ybillCameraAxisY);
+
+	//Y軸回りビルボード行列
+	matBillbooardY.r[0] = ybillCameraAxisX;
+	matBillbooardY.r[1] = ybillCameraAxisY;
+	matBillbooardY.r[2] = ybillCameraAxisZ;
+	matBillbooardY.r[3] = XMVectorSet(0 , 0 , 0 , 1);
+#pragma endregion
 }
 
 bool Object3d::Initialize()
@@ -588,8 +616,12 @@ void Object3d::Update()
 
 	// ワールド行列の合成
 	matWorld = XMMatrixIdentity(); // 変形をリセット
+
 	matWorld *= matScale; // ワールド行列にスケーリングを反映
 	matWorld *= matRot; // ワールド行列に回転を反映
+	
+	matWorld *= matBillbooardY;
+
 	matWorld *= matTrans; // ワールド行列に平行移動を反映
 
 	// 親オブジェクトがあれば
