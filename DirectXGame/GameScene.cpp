@@ -14,23 +14,18 @@ std::uniform_real_distribution<float> distPosY(0.0 , 0.0);
 std::uniform_real_distribution<float> distPosZ(-20.0 , 20.0);
 std::uniform_real_distribution<float> distRot(0 , XMConvertToRadians(360.0f));
 
-GameScene::GameScene()
-{
+GameScene::GameScene() {
 }
 
-GameScene::~GameScene()
-{
+GameScene::~GameScene() {
 	delete spriteBG;
-	for (int i = 0; i < 50; i++) {
-		delete object3d[i];
-	}
+	delete object3d;
 
 	delete sprite1;
 	delete sprite2;
 }
 
-void GameScene::Initialize(DirectXCommon* dxCommon, Input* input)
-{
+void GameScene::Initialize(DirectXCommon* dxCommon , Input* input) {
 	// nullptrチェック
 	assert(dxCommon);
 	assert(input);
@@ -39,25 +34,18 @@ void GameScene::Initialize(DirectXCommon* dxCommon, Input* input)
 	this->input = input;
 
 	// デバッグテキスト用テクスチャ読み込み
-	Sprite::LoadTexture(debugTextTexNumber, L"Resources/debugfont.png");
+	Sprite::LoadTexture(debugTextTexNumber , L"Resources/debugfont.png");
 	// デバッグテキスト初期化
 	debugText.Initialize(debugTextTexNumber);
 
 	// テクスチャ読み込み
-	Sprite::LoadTexture(1, L"Resources/background.png");
+	Sprite::LoadTexture(1 , L"Resources/background.png");
 
 	// 背景スプライト生成
-	spriteBG = Sprite::Create(1, { 0.0f,0.0f });
+	spriteBG = Sprite::Create(1 , {0.0f , 0.0f});
 	// 3Dオブジェクト生成
-	for (int i = 0; i < 50; i++) {
-		object3d[i] = Object3d::Create();
-		object3d[i]->Update();
-		object3d[i]->SetPosition(
-			{distPosX(engine) ,
-			0 ,
-			distPosZ(engine)}
-		);
-	}
+	object3d = Object3d::Create();
+	object3d->Update();
 
 	Sprite::LoadTexture(2 , L"Resources/texture.png");
 
@@ -91,13 +79,11 @@ void GameScene::Update() {
 		else if (input->PushKey(DIK_A)) { Object3d::CameraMoveEyeVector({-1.0f , 0.0f , 0.0f}); }
 	}
 
-	for (int i = 0; i < 50; i++) {
-		object3d[i]->Update();
-	}
+	object3d->Update();
+
 }
 
-void GameScene::Draw()
-{
+void GameScene::Draw() {
 	// コマンドリストの取得
 	ID3D12GraphicsCommandList* cmdList = dxCommon->GetCommandList();
 
@@ -105,7 +91,7 @@ void GameScene::Draw()
 	// 背景スプライト描画前処理
 	Sprite::PreDraw(cmdList);
 	// 背景スプライト描画
-	//spriteBG->Draw();
+	spriteBG->Draw();
 
 	/// <summary>
 	/// ここに背景スプライトの描画処理を追加できる
@@ -121,10 +107,8 @@ void GameScene::Draw()
 	// 3Dオブジェクト描画前処理
 	Object3d::PreDraw(cmdList);
 
-	for (int i = 0; i < 50; i++) {
-		// 3Dオブクジェクトの描画
-		object3d[i]->Draw();
-	}
+	// 3Dオブクジェクトの描画
+	object3d->Draw();
 
 	/// <summary>
 	/// ここに3Dオブジェクトの描画処理を追加できる

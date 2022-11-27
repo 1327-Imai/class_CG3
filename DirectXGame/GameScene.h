@@ -63,6 +63,6 @@ private: // メンバ変数
 	/// ゲームシーン用
 	/// </summary>
 	Sprite* spriteBG = nullptr;
-	Object3d* object3d[50] = {nullptr};
+	Object3d* object3d = nullptr;
 };
 
